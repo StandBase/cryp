@@ -36,7 +36,7 @@
             border-radius: 5px;
             width: 200px;
         }
-        #bonusMessage {
+        #bonusMessage, #inventoryMessage {
             color: red;
             margin-top: 20px;
         }
@@ -106,9 +106,7 @@
 
     <div id="inventorySection">
         <h2>Инвентарь</h2>
-        <img src="https://via.placeholder.com/100" alt="Генератор монет" class="item-image">
-        <h3>Генератор монет</h3>
-        <p class="item-description">Этот генератор производит +10 монет к вашему балансу. Используйте его один раз для мгновенной выгоды!</p>
+        <div id="inventoryContent"></div>
         <button class="gradient-button" id="coinGeneratorButton">Использовать генератор монет</button>
         <p id="inventoryMessage"></p>
         <button class="gradient-button" id="backToGameFromInventoryButton">Назад в игру</button>
@@ -116,7 +114,7 @@
 
     <div id="betSection">
         <h2>Игра 3 стакана</h2>
-        <input type="number" id="betAmount" placeholder="Ставка (100-1000000000000)" min="100" max="1000000000000">
+        <input type="number" id="betAmount" placeholder="Ставка (100-1000000000000)" min="100" max="1000000000000>
         <br><br>
         <h3>Выберите стакан:</h3>
         <div class="cupContainer">
@@ -139,6 +137,7 @@
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('gameSection').style.display = 'block';
             loadGameData();
+            checkInventory();
         }
 
         function loadGameData() {
@@ -146,6 +145,27 @@
             document.getElementById('balance').textContent = currentUser.balance;
             document.getElementById('clickValue').textContent = currentUser.clickValue;
             document.getElementById('upgradeCost').textContent = currentUser.upgradeCost;
+
+            if (currentUser.balance >= 100000 && !currentUser.hasCoinGenerator) {
+                currentUser.hasCoinGenerator = true;
+                alert('Поздравляем! Вы получили генератор монет за достижение 100,000 монет на балансе!');
+                saveGameData();
+            }
+        }
+
+        function checkInventory() {
+            const inventoryContent = document.getElementById('inventoryContent');
+            inventoryContent.innerHTML = ''; // Clear previous content
+
+            if (currentUser.hasCoinGenerator) {
+                inventoryContent.innerHTML = `
+                    <img src="https://via.placeholder.com/100" alt="Генератор монет" class="item-image">
+                    <h3>Генератор монет</h3>
+                    <p class="item-description">Этот генератор производит +10 монет к вашему балансу. Используйте его один раз для мгновенной выгоды!</p>
+                `;
+            } else {
+                inventoryContent.innerHTML = '<p>Инвентарь пуст.</p>';
+            }
         }
 
         function saveGameData() {
@@ -169,7 +189,7 @@
                         clickValue: 1,
                         upgradeCost: 5,
                         lastBonusTime: 0,
-                        hasCoinGenerator: true // Initial inventory item
+                        hasCoinGenerator: false // Initial state
                     };
                     localStorage.setItem(email, JSON.stringify(user));
                     document.getElementById('authMessage').textContent = 'Регистрация успешна! Войдите в систему.';
@@ -243,6 +263,7 @@
         document.getElementById('inventoryButton').addEventListener('click', function() {
             document.getElementById('gameSection').style.display = 'none';
             document.getElementById('inventorySection').style.display = 'block';
+            checkInventory(); // Check inventory when entering
         });
 
         document.getElementById('coinGeneratorButton').addEventListener('click', function() {
@@ -252,6 +273,7 @@
                 document.getElementById('inventoryMessage').textContent = 'Вы получили +10 монет от генератора!';
                 saveGameData();
                 currentUser.hasCoinGenerator = false; // Disable the generator after use
+                checkInventory(); // Update inventory view
             } else {
                 document.getElementById('inventoryMessage').textContent = 'У вас нет доступного генератора монет!';
             }
@@ -278,7 +300,7 @@
                     return;
                 }
 
-                let winningChance = Math.random() < 0.45;
+                let winningChance = Math.random() < 0.05; // 5% chance to win
                 let winningCup = winningChance ? userChoice : (Math.floor(Math.random() * 3));
 
                 if (userChoice === winningCup) {
