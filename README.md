@@ -4,7 +4,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Баланс с регистрацией и входом</title>
     <style>
-        /* Existing styles */
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;
@@ -41,14 +40,14 @@
             color: red;
             margin-top: 20px;
         }
-        #authSection, #gameSection, #betSection {
+        #authSection, #gameSection, #betSection, #inventorySection {
             margin-top: 20px;
             background: white;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        #gameSection, #betSection {
+        #gameSection, #betSection, #inventorySection {
             display: none;
         }
         .cupButton {
@@ -65,6 +64,14 @@
             display: flex;
             justify-content: center;
             margin-top: 10px;
+        }
+        .item-description {
+            margin-top: 10px;
+            color: #555;
+        }
+        .item-image {
+            width: 100px;
+            height: auto;
         }
     </style>
 </head>
@@ -91,13 +98,20 @@
         <br><br>
         <button class="gradient-button" id="upgradeButton">Купить апгрейд (<span id="upgradeCost">5</span> монет, +2 клика)</button>
         <br><br>
-        <button class="gradient-button" id="bonusButton">Получить ежедневный бонус</button>
         <button class="gradient-button" id="playCupsButton">Играть в 3 стакана</button>
-        <br><br>
-        <input type="text" id="bonusCode" placeholder="Введите код бонуса">
-        <button class="gradient-button" id="applyBonusButton">Применить код</button>
+        <button class="gradient-button" id="inventoryButton">Инвентарь</button>
         <p id="bonusMessage"></p>
         <button class="gradient-button" id="logoutButton">Выйти</button>
+    </div>
+
+    <div id="inventorySection">
+        <h2>Инвентарь</h2>
+        <img src="https://via.placeholder.com/100" alt="Генератор монет" class="item-image">
+        <h3>Генератор монет</h3>
+        <p class="item-description">Этот генератор производит +10 монет к вашему балансу. Используйте его один раз для мгновенной выгоды!</p>
+        <button class="gradient-button" id="coinGeneratorButton">Использовать генератор монет</button>
+        <p id="inventoryMessage"></p>
+        <button class="gradient-button" id="backToGameFromInventoryButton">Назад в игру</button>
     </div>
 
     <div id="betSection">
@@ -154,7 +168,8 @@
                         balance: 0,
                         clickValue: 1,
                         upgradeCost: 5,
-                        lastBonusTime: 0
+                        lastBonusTime: 0,
+                        hasCoinGenerator: true // Initial inventory item
                     };
                     localStorage.setItem(email, JSON.stringify(user));
                     document.getElementById('authMessage').textContent = 'Регистрация успешна! Войдите в систему.';
@@ -214,42 +229,6 @@
             }
         });
 
-        document.getElementById('bonusButton').addEventListener('click', function() {
-            let currentTime = new Date().getTime();
-            if (currentTime - currentUser.lastBonusTime >= 24 * 60 * 60 * 1000) {
-                let bonus = Math.floor(Math.random() * 50000) + 1;
-                currentUser.balance += bonus;
-                currentUser.lastBonusTime = currentTime;
-                document.getElementById('balance').textContent = currentUser.balance;
-                document.getElementById('bonusMessage').textContent = `Вы получили бонус: ${bonus} монет!`;
-                saveGameData();
-            } else {
-                let timeLeft = 24 * 60 * 60 * 1000 - (currentTime - currentUser.lastBonusTime);
-                let hoursLeft = Math.floor(timeLeft / (60 * 60 * 1000));
-                document.getElementById('bonusMessage').textContent = `Бонус доступен через ${hoursLeft} часов.`;
-            }
-        });
-
-        document.getElementById('applyBonusButton').addEventListener('click', function() {
-            let bonusCode = document.getElementById('bonusCode').value.trim();
-            let bonusAmount = 0;
-
-            if (bonusCode === 'BONUS50') {
-                bonusAmount = 50;
-            } else if (bonusCode === 'SUPER100') {
-                bonusAmount = 100;
-            } else {
-                document.getElementById('bonusMessage').textContent = 'Неверный код бонуса!';
-                return;
-            }
-
-            currentUser.balance += bonusAmount;
-            document.getElementById('balance').textContent = currentUser.balance;
-            document.getElementById('bonusMessage').textContent = `Вы получили бонус: ${bonusAmount} монет!`;
-            saveGameData();
-            document.getElementById('bonusCode').value = ''; // Clear input
-        });
-
         document.getElementById('logoutButton').addEventListener('click', function() {
             localStorage.removeItem('currentUser');
             document.getElementById('authSection').style.display = 'block';
@@ -259,6 +238,28 @@
         document.getElementById('playCupsButton').addEventListener('click', function() {
             document.getElementById('gameSection').style.display = 'none';
             document.getElementById('betSection').style.display = 'block';
+        });
+
+        document.getElementById('inventoryButton').addEventListener('click', function() {
+            document.getElementById('gameSection').style.display = 'none';
+            document.getElementById('inventorySection').style.display = 'block';
+        });
+
+        document.getElementById('coinGeneratorButton').addEventListener('click', function() {
+            if (currentUser.hasCoinGenerator) {
+                currentUser.balance += 10;
+                document.getElementById('balance').textContent = currentUser.balance;
+                document.getElementById('inventoryMessage').textContent = 'Вы получили +10 монет от генератора!';
+                saveGameData();
+                currentUser.hasCoinGenerator = false; // Disable the generator after use
+            } else {
+                document.getElementById('inventoryMessage').textContent = 'У вас нет доступного генератора монет!';
+            }
+        });
+
+        document.getElementById('backToGameFromInventoryButton').addEventListener('click', function() {
+            document.getElementById('inventorySection').style.display = 'none';
+            document.getElementById('gameSection').style.display = 'block';
         });
 
         const cupsButtons = document.querySelectorAll('.cupButton');
