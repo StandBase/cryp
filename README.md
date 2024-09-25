@@ -41,14 +41,14 @@
             color: red;
             margin-top: 20px;
         }
-        #authSection, #gameSection, #betSection, #shopSection {
+        #authSection, #gameSection, #betSection, #shopSection, #inventorySection {
             margin-top: 20px;
             background: white;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        #gameSection, #betSection, #shopSection {
+        #gameSection, #betSection, #shopSection, #inventorySection {
             display: none;
         }
         .cupButton {
@@ -85,9 +85,7 @@
     </div>
 
     <div id="gameSection">
-        <h1>Ваш баланс: <span id="balance">0</span></h1>
-        <h1>💰 Баланс: <span id="moneyBalance">0</span></h1>
-        <h1>💎 Баланс коины: <span id="coinBalance">0</span></h1>
+        <h1>Ваш баланс коины: <span id="coinBalance">0</span></h1>
         <h2>Клики за раз: <span id="clickValue">1</span></h2>
         <button class="click-button" id="increaseButton">Клик</button>
         <br><br>
@@ -96,6 +94,7 @@
         <button class="gradient-button" id="bonusButton">Получить ежедневный бонус</button>
         <button class="gradient-button" id="playCupsButton">Играть в 3 стакана</button>
         <button class="gradient-button" id="shopButton">Перейти в магазин</button>
+        <button class="gradient-button" id="inventoryButton">Инвентарь</button>
         <p id="bonusMessage"></p>
         <button class="gradient-button" id="logoutButton">Выйти</button>
     </div>
@@ -121,6 +120,12 @@
         <button class="gradient-button" id="backToGameFromShopButton">Назад в игру</button>
     </div>
 
+    <div id="inventorySection">
+        <h2>Инвентарь</h2>
+        <div id="inventoryList"></div>
+        <button class="gradient-button" id="backToGameFromInventoryButton">Назад в игру</button>
+    </div>
+
     <script>
         let currentUser = localStorage.getItem('currentUser');
 
@@ -136,21 +141,14 @@
 
         function loadGameData() {
             currentUser = JSON.parse(localStorage.getItem(localStorage.getItem('currentUser')));
-            document.getElementById('balance').textContent = currentUser.balance;
-            document.getElementById('moneyBalance').textContent = currentUser.moneyBalance;
             document.getElementById('coinBalance').textContent = currentUser.coinBalance;
             document.getElementById('clickValue').textContent = currentUser.clickValue;
             document.getElementById('upgradeCost').textContent = currentUser.upgradeCost;
+            loadInventory();
         }
 
         function saveGameData() {
             localStorage.setItem(currentUser.email, JSON.stringify(currentUser));
-        }
-
-        function generateMoney() {
-            currentUser.moneyBalance += 1; // Генерация 1 💰 каждую минуту
-            document.getElementById('moneyBalance').textContent = currentUser.moneyBalance;
-            saveGameData();
         }
 
         function generateCoins() {
@@ -172,13 +170,11 @@
                         login: login,
                         email: email,
                         password: password,
-                        balance: 0,
-                        moneyBalance: 0,
                         coinBalance: 0,
                         clickValue: 1,
                         upgradeCost: 5,
                         lastBonusTime: 0,
-                        generators: []
+                        generators: [{ name: 'Базовый Генератор', income: 1 }]
                     };
                     localStorage.setItem(email, JSON.stringify(user));
                     document.getElementById('authMessage').textContent = 'Регистрация успешна! Войдите в систему.';
@@ -219,17 +215,17 @@
         });
 
         document.getElementById('increaseButton').addEventListener('click', function() {
-            currentUser.balance += currentUser.clickValue;
-            document.getElementById('balance').textContent = currentUser.balance;
+            currentUser.coinBalance += currentUser.clickValue;
+            document.getElementById('coinBalance').textContent = currentUser.coinBalance;
             saveGameData();
         });
 
         document.getElementById('upgradeButton').addEventListener('click', function() {
-            if (currentUser.balance >= currentUser.upgradeCost) {
-                currentUser.balance -= currentUser.upgradeCost;
+            if (currentUser.coinBalance >= currentUser.upgradeCost) {
+                currentUser.coinBalance -= currentUser.upgradeCost;
                 currentUser.clickValue += 2;
                 currentUser.upgradeCost = Math.ceil(currentUser.upgradeCost * 1.5);
-                document.getElementById('balance').textContent = currentUser.balance;
+                document.getElementById('coinBalance').textContent = currentUser.coinBalance;
                 document.getElementById('clickValue').textContent = currentUser.clickValue;
                 document.getElementById('upgradeCost').textContent = currentUser.upgradeCost;
                 saveGameData();
@@ -242,9 +238,9 @@
             let currentTime = new Date().getTime();
             if (currentTime - currentUser.lastBonusTime >= 24 * 60 * 60 * 1000) {
                 let bonus = Math.floor(Math.random() * 50000) + 1;
-                currentUser.balance += bonus;
+                currentUser.coinBalance += bonus;
                 currentUser.lastBonusTime = currentTime;
-                document.getElementById('balance').textContent = currentUser.balance;
+                document.getElementById('coinBalance').textContent = currentUser.coinBalance;
                 document.getElementById('bonusMessage').textContent = `Вы получили бонус: ${bonus} монет!`;
                 saveGameData();
             } else {
@@ -276,7 +272,7 @@
                     return;
                 }
 
-                if (currentUser.balance < betAmount) {
+                if (currentUser.coinBalance < betAmount) {
                     document.getElementById('betMessage').textContent = 'Недостаточно средств для ставки!';
                     return;
                 }
@@ -285,15 +281,15 @@
                 let winningCup = winningChance ? userChoice : (Math.floor(Math.random() * 3));
 
                 if (userChoice === winningCup) {
-                    currentUser.balance += betAmount * 2;
-                    document.getElementById('betMessage').textContent = `Вы выиграли! Ваш новый баланс: ${currentUser.balance}`;
+                    currentUser.coinBalance += betAmount * 2;
+                    document.getElementById('betMessage').textContent = `Вы выиграли! Ваш новый баланс: ${currentUser.coinBalance}`;
                 } else {
-                    currentUser.balance -= betAmount;
-                    document.getElementById('betMessage').textContent = `Вы проиграли! Ваш новый баланс: ${currentUser.balance}`;
+                    currentUser.coinBalance -= betAmount;
+                    document.getElementById('betMessage').textContent = `Вы проиграли! Ваш новый баланс: ${currentUser.coinBalance}`;
                 }
 
                 saveGameData();
-                document.getElementById('balance').textContent = currentUser.balance;
+                document.getElementById('coinBalance').textContent = currentUser.coinBalance;
             });
         });
 
@@ -308,40 +304,62 @@
             loadGenerators();
         });
 
-        function loadGenerators() {
-            const generatorList = document.getElementById('generatorList');
-            generatorList.innerHTML = '';
-            const generators = [
-                { name: "Генератор 1", cost: 100, income: 1 },
-                { name: "Генератор 2", cost: 500, income: 5 },
-                { name: "Генератор 3", cost: 1000, income: 10 },
-            ];
-            generators.forEach(generator => {
-                const div = document.createElement('div');
-                div.innerHTML = `${generator.name} - Стоимость: ${generator.cost} коина, Доход: ${generator.income} в минуту. 
-                                <button class="gradient-button" onclick="buyGenerator(${generator.cost}, ${generator.income})">Купить</button>`;
-                generatorList.appendChild(div);
-            });
-        }
-
-        function buyGenerator(cost, income) {
-            if (currentUser.coinBalance >= cost) {
-                currentUser.coinBalance -= cost;
-                currentUser.moneyBalance += income; // или можете добавить income к обоим балансам
-                document.getElementById('coinBalance').textContent = currentUser.coinBalance;
-                document.getElementById('moneyBalance').textContent = currentUser.moneyBalance;
-                saveGameData();
-            } else {
-                alert('Недостаточно коина для покупки!');
-            }
-        }
+        document.getElementById('inventoryButton').addEventListener('click', function() {
+            document.getElementById('gameSection').style.display = 'none';
+            document.getElementById('inventorySection').style.display = 'block';
+            loadInventory();
+        });
 
         document.getElementById('backToGameFromShopButton').addEventListener('click', function() {
             document.getElementById('shopSection').style.display = 'none';
             document.getElementById('gameSection').style.display = 'block';
         });
 
-        setInterval(generateMoney, 60000); // Генерация 1 💰 каждую минуту
+        document.getElementById('backToGameFromInventoryButton').addEventListener('click', function() {
+            document.getElementById('inventorySection').style.display = 'none';
+            document.getElementById('gameSection').style.display = 'block';
+        });
+
+        function loadGenerators() {
+            const generatorList = document.getElementById('generatorList');
+            generatorList.innerHTML = '';
+
+            const generators = [
+                { name: 'Генератор 1', cost: 10, income: 1 },
+                { name: 'Генератор 2', cost: 50, income: 5 },
+                { name: 'Генератор 3', cost: 100, income: 10 }
+            ];
+
+            generators.forEach((gen) => {
+                const button = document.createElement('button');
+                button.textContent = `${gen.name} - ${gen.cost} монет`;
+                button.className = 'gradient-button';
+                button.addEventListener('click', function() {
+                    if (currentUser.coinBalance >= gen.cost) {
+                        currentUser.coinBalance -= gen.cost;
+                        currentUser.generators.push(gen);
+                        document.getElementById('coinBalance').textContent = currentUser.coinBalance;
+                        saveGameData();
+                        alert(`Вы купили ${gen.name}!`);
+                    } else {
+                        alert('Недостаточно коина для покупки!');
+                    }
+                });
+                generatorList.appendChild(button);
+            });
+        }
+
+        function loadInventory() {
+            const inventoryList = document.getElementById('inventoryList');
+            inventoryList.innerHTML = '';
+
+            currentUser.generators.forEach(gen => {
+                const item = document.createElement('div');
+                item.textContent = `${gen.name} (доход: ${gen.income} в минуту)`;
+                inventoryList.appendChild(item);
+            });
+        }
+
         setInterval(generateCoins, 60000); // Генерация 1 💎 каждую минуту
     </script>
 </body>
