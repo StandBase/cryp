@@ -41,14 +41,14 @@
             color: red;
             margin-top: 20px;
         }
-        #authSection, #gameSection, #betSection {
+        #authSection, #gameSection, #betSection, #shopSection {
             margin-top: 20px;
             background: white;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        #gameSection, #betSection {
+        #gameSection, #betSection, #shopSection {
             display: none;
         }
         .cupButton {
@@ -87,6 +87,7 @@
     <div id="gameSection">
         <h1>Ваш баланс: <span id="balance">0</span></h1>
         <h1>💰 Баланс: <span id="moneyBalance">0</span></h1>
+        <h1>💎 Баланс коины: <span id="coinBalance">0</span></h1>
         <h2>Клики за раз: <span id="clickValue">1</span></h2>
         <button class="click-button" id="increaseButton">Клик</button>
         <br><br>
@@ -94,13 +95,14 @@
         <br><br>
         <button class="gradient-button" id="bonusButton">Получить ежедневный бонус</button>
         <button class="gradient-button" id="playCupsButton">Играть в 3 стакана</button>
+        <button class="gradient-button" id="shopButton">Перейти в магазин</button>
         <p id="bonusMessage"></p>
         <button class="gradient-button" id="logoutButton">Выйти</button>
     </div>
 
     <div id="betSection">
         <h2>Игра 3 стакана</h2>
-        <input type="number" id="betAmount" placeholder="Ставка (100-1000000000000)" min="100" max="1000000000000">
+        <input type="number" id="betAmount" placeholder="Ставка (100-1000000000000)" min="100" max="1000000000000>
         <br><br>
         <h3>Выберите стакан:</h3>
         <div class="cupContainer">
@@ -110,6 +112,13 @@
         </div>
         <p id="betMessage"></p>
         <button class="gradient-button" id="backToGameButton">Назад в игру</button>
+    </div>
+
+    <div id="shopSection">
+        <h2>Магазин</h2>
+        <h3>Генераторы:</h3>
+        <div id="generatorList"></div>
+        <button class="gradient-button" id="backToGameFromShopButton">Назад в игру</button>
     </div>
 
     <script>
@@ -129,6 +138,7 @@
             currentUser = JSON.parse(localStorage.getItem(localStorage.getItem('currentUser')));
             document.getElementById('balance').textContent = currentUser.balance;
             document.getElementById('moneyBalance').textContent = currentUser.moneyBalance;
+            document.getElementById('coinBalance').textContent = currentUser.coinBalance;
             document.getElementById('clickValue').textContent = currentUser.clickValue;
             document.getElementById('upgradeCost').textContent = currentUser.upgradeCost;
         }
@@ -138,8 +148,14 @@
         }
 
         function generateMoney() {
-            currentUser.moneyBalance += 1;
+            currentUser.moneyBalance += 1; // Генерация 1 💰 каждую минуту
             document.getElementById('moneyBalance').textContent = currentUser.moneyBalance;
+            saveGameData();
+        }
+
+        function generateCoins() {
+            currentUser.coinBalance += 1; // Генерация 1 💎 каждую минуту
+            document.getElementById('coinBalance').textContent = currentUser.coinBalance;
             saveGameData();
         }
 
@@ -158,9 +174,11 @@
                         password: password,
                         balance: 0,
                         moneyBalance: 0,
+                        coinBalance: 0,
                         clickValue: 1,
                         upgradeCost: 5,
-                        lastBonusTime: 0
+                        lastBonusTime: 0,
+                        generators: []
                     };
                     localStorage.setItem(email, JSON.stringify(user));
                     document.getElementById('authMessage').textContent = 'Регистрация успешна! Войдите в систему.';
@@ -263,7 +281,7 @@
                     return;
                 }
 
-                let winningChance = Math.random() < 0.45;
+                let winningChance = Math.random() < 0.05; // 5% шанс на выигрыш
                 let winningCup = winningChance ? userChoice : (Math.floor(Math.random() * 3));
 
                 if (userChoice === winningCup) {
@@ -284,7 +302,47 @@
             document.getElementById('gameSection').style.display = 'block';
         });
 
+        document.getElementById('shopButton').addEventListener('click', function() {
+            document.getElementById('gameSection').style.display = 'none';
+            document.getElementById('shopSection').style.display = 'block';
+            loadGenerators();
+        });
+
+        function loadGenerators() {
+            const generatorList = document.getElementById('generatorList');
+            generatorList.innerHTML = '';
+            const generators = [
+                { name: "Генератор 1", cost: 100, income: 1 },
+                { name: "Генератор 2", cost: 500, income: 5 },
+                { name: "Генератор 3", cost: 1000, income: 10 },
+            ];
+            generators.forEach(generator => {
+                const div = document.createElement('div');
+                div.innerHTML = `${generator.name} - Стоимость: ${generator.cost} коина, Доход: ${generator.income} в минуту. 
+                                <button class="gradient-button" onclick="buyGenerator(${generator.cost}, ${generator.income})">Купить</button>`;
+                generatorList.appendChild(div);
+            });
+        }
+
+        function buyGenerator(cost, income) {
+            if (currentUser.coinBalance >= cost) {
+                currentUser.coinBalance -= cost;
+                currentUser.moneyBalance += income; // или можете добавить income к обоим балансам
+                document.getElementById('coinBalance').textContent = currentUser.coinBalance;
+                document.getElementById('moneyBalance').textContent = currentUser.moneyBalance;
+                saveGameData();
+            } else {
+                alert('Недостаточно коина для покупки!');
+            }
+        }
+
+        document.getElementById('backToGameFromShopButton').addEventListener('click', function() {
+            document.getElementById('shopSection').style.display = 'none';
+            document.getElementById('gameSection').style.display = 'block';
+        });
+
         setInterval(generateMoney, 60000); // Генерация 1 💰 каждую минуту
+        setInterval(generateCoins, 60000); // Генерация 1 💎 каждую минуту
     </script>
 </body>
 </html>
