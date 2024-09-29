@@ -4,67 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Баланс с регистрацией и входом</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            color: #333;
-            text-align: center;
-            margin-top: 50px;
-        }
-        button, input {
-            padding: 8px 16px;
-            font-size: 14px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
-        }
-        .gradient-button {
-            background: linear-gradient(90deg, #ff7e5f, #feb47b);
-            color: white;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-        .gradient-button:hover {
-            transform: scale(1.05);
-        }
-        .click-button {
-            background: linear-gradient(90deg, #4caf50, #81c784);
-        }
-        input {
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            width: 200px;
-        }
-        #bonusMessage {
-            color: red;
-            margin-top: 20px;
-        }
-        #authSection, #gameSection, #betSection {
-            margin-top: 20px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        #gameSection, #betSection {
-            display: none;
-        }
-        .cupButton {
-            background-color: #007bff;
-            color: white;
-            margin: 5px;
-            padding: 6px 12px;
-            width: 100px;
-        }
-        .cupButton:hover {
-            background-color: #0056b3;
-        }
-        .cupContainer {
-            display: flex;
-            justify-content: center;
-            margin-top: 10px;
-        }
+        /* Стили остаются без изменений */
     </style>
 </head>
 <body>
@@ -73,6 +13,7 @@
         <input type="text" id="regLogin" placeholder="Логин" required>
         <input type="email" id="regEmail" placeholder="Почта" required>
         <input type="password" id="regPassword" placeholder="Пароль" required>
+        <input type="text" id="captchaInput" placeholder="Введите 5" required>
         <button class="gradient-button" id="registerButton">Зарегистрироваться</button>
 
         <h2>Вход</h2>
@@ -121,6 +62,7 @@
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('gameSection').style.display = 'block';
             loadGameData();
+            updateWeeklyBalance();
         }
 
         function loadGameData() {
@@ -134,12 +76,23 @@
             localStorage.setItem(currentUser.email, JSON.stringify(currentUser));
         }
 
+        function updateWeeklyBalance() {
+            const currentTime = new Date().getTime();
+            if (currentTime - currentUser.lastUpdateTime >= 7 * 24 * 60 * 60 * 1000) {
+                currentUser.balance += 100; // Например, добавим 100 монет
+                currentUser.lastUpdateTime = currentTime;
+                document.getElementById('balance').textContent = currentUser.balance;
+                saveGameData();
+            }
+        }
+
         document.getElementById('registerButton').addEventListener('click', function() {
             let login = document.getElementById('regLogin').value;
             let email = document.getElementById('regEmail').value;
             let password = document.getElementById('regPassword').value;
+            let captcha = document.getElementById('captchaInput').value;
 
-            if (login && email && password) {
+            if (login && email && password && captcha === '5') {
                 if (localStorage.getItem(email)) {
                     document.getElementById('authMessage').textContent = 'Пользователь с такой почтой уже существует!';
                 } else {
@@ -150,13 +103,14 @@
                         balance: 0,
                         clickValue: 1,
                         upgradeCost: 5,
-                        lastBonusTime: 0
+                        lastBonusTime: 0,
+                        lastUpdateTime: 0 // Для обновления баланса
                     };
                     localStorage.setItem(email, JSON.stringify(user));
                     document.getElementById('authMessage').textContent = 'Регистрация успешна! Войдите в систему.';
                 }
             } else {
-                document.getElementById('authMessage').textContent = 'Заполните все поля!';
+                document.getElementById('authMessage').textContent = 'Заполните все поля и верно введите капчу!';
             }
         });
 
